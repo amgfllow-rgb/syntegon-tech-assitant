@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Syntegon Technical Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Fuente bonita -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top, #1f2937, #020617);
+      color: #e5e7eb;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* ========= PANTALLA DE CARGA ========= */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #000 url("splash.png") center center no-repeat;
+      background-size: contain;
+    }
+
+    .splash-loading-dots {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+    }
+
+    .splash-loading-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #00BE82;
+      animation: splash-dot 1.2s infinite ease-in-out;
+      opacity: 0.2;
+    }
+
+    .splash-loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .splash-loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes splash-dot {
+      0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+      40% { opacity: 1; transform: translateY(-6px); }
+    }
+
+    /* ========= APP (CHAT) ========= */
+    .app {
+      width: 100%;
+      max-width: 900px;
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.9);
+      overflow: hidden;
+      display: none;      /* se muestra solo tras login correcto */
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      background: linear-gradient(90deg, #020617, #111827);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .logo-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-circle {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      box-shadow: none;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .logo-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .title-block h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    .title-block span {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #a7f3d0;
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 999px;
+      padding: 4px 10px;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+    }
+
+    .chat {
+      display: flex;
+      flex-direction: column;
+      height: 70vh;
+    }
+
+    #messages {
+      flex: 1;
+      padding: 18px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .message-row.user {
+      justify-content: flex-end;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .avatar.user {
+      background: none;
+      box-shadow: none;
+      padding: 0;
+    }
+
+    .avatar.user img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .avatar.bot {
+      background: none;
+      box-shadow: none;
+      padding: 0;
+    }
+
+    .avatar.bot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .bubble {
+      max-width: 70%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .bubble ol,
+    .bubble ul {
+      margin-top: 6px;
+      margin-bottom: 6px;
+      padding-left: 1.4rem;
+      list-style-position: outside;
+    }
+
+    .bubble li {
+      margin-bottom: 4px;
+    }
+
+    .user .bubble {
+      background: #00BE82;
+      color: white;
+      border-bottom-right-radius: 4px;
+      border: 1px solid rgba(0, 120, 82, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 190, 130, 0.25);
+    }
+
+    .bot .bubble {
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      border-bottom-left-radius: 4px;
+    }
+
+    .typing-indicator-row {
+      padding: 0 20px 6px;
+    }
+
+    .typing {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 3px;
+    }
+
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #9ca3af;
+      animation: blink 1.4s infinite both;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+      40% { opacity: 1; transform: translateY(-2px); }
+    }
+
+    .input-area {
+      padding: 12px 16px 16px;
+      border-top: 1px solid rgba(148, 163, 184, 0.4);
+      background: linear-gradient(180deg, #020617, #020617e0);
+    }
+
+    .input-inner {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 999px;
+      padding: 6px 8px 6px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+    }
+
+    #messageInput {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #e5e7eb;
+      font-size: 14px;
+    }
+
+    #messageInput::placeholder {
+      color: #6b7280;
+    }
+
+    .send-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #00BE82;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 6px 18px rgba(0, 190, 130, 0.35);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.15s;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      opacity: 0.9;
+      box-shadow: 0 6px 20px rgba(0, 190, 130, 0.45);
+    }
+
+    .send-btn:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: 0 3px 10px rgba(0, 190, 130, 0.35);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.4;
+      box-shadow: none;
+      cursor: default;
+    }
+
+    .send-icon {
+      font-size: 14px;
+    }
+
+    /* ===== LOGIN SCREEN ===== */
+    #loginScreen {
+      position: fixed;
+      inset: 0;
+      display: none;  /* se muestra tras el splash */
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #020617, #020617f2);
+      z-index: 5000;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 360px;
+      background: rgba(15, 23, 42, 0.98);
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.9);
+      padding: 24px 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .login-card h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-bottom: 2px;
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .login-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .login-field label {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .login-field input {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      padding: 8px 12px;
+      font-size: 14px;
+      color: #e5e7eb;
+      outline: none;
+    }
+
+    .login-field input:focus {
+      border-color: #00be82;
+      box-shadow: 0 0 0 1px rgba(0, 190, 130, 0.4);
+    }
+
+    .login-btn {
+      margin-top: 6px;
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #00be82;
+      color: white;
+      box-shadow: 0 6px 18px rgba(0, 190, 130, 0.35);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.15s;
+    }
+
+    .login-btn:disabled {
+     opacity: 0.5;
+     box-shadow: none;
+     cursor: default;
+    }
+
+    .login-btn:hover {
+      opacity: 0.9;
+      box-shadow: 0 6px 20px rgba(0, 190, 130, 0.45);
+    }
+
+    .login-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 10px rgba(0, 190, 130, 0.35);
+    }
+
+    .login-error {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #f97373;
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 0;
+        align-items: stretch;
+        justify-content: stretch;
+      }
+
+      .app {
+        max-width: 100%;
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .chat {
+        height: calc(100vh - 120px);
+      }
+
+      #messages {
+        padding: 12px;
+      }
+
+      .input-area {
+        padding: 8px 10px 12px;
+      }
+
+      .bubble {
+        max-width: 90%;
+        font-size: 13px;
+      }
+
+      .title-block h1 { font-size: 16px; }
+      .title-block span { font-size: 11px; }
+
+      .logo-circle {
+        width: 44px;
+        height: 44px;
+      }
+    }
+
+   /* ======== LOADING DEL BOTÓN LOGIN ======== */
+.loading-hidden {
+  display: none;
+}
+
+#login-loading {
+  margin-left: 10px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+#login-loading .dot {
+  display: inline-block;
+  margin-left: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #00a38f; /* tu color corporativo */
+  opacity: 0.2;
+  animation: dot-blink 1.4s infinite both;
+}
+
+#login-loading .dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+#login-loading .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+#login-loading .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dot-blink {
+  0%   { opacity: 0.2; transform: translateY(0); }
+  50%  { opacity: 1;   transform: translateY(-2px); }
+  100% { opacity: 0.2; transform: translateY(0); }
+}
+
+
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE CARGA -->
+  <div id="splash-screen">
+    <div class="splash-loading-dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <h2>Technical Assistant</h2>
+      <div class="login-subtitle">
+        Enter your credentials to access the chat.
+      </div>
+
+      <div class="login-field">
+        <label for="usernameInput">User</label>
+        <input id="usernameInput" type="text" autocomplete="off" />
+      </div>
+
+      <div class="login-field">
+        <label for="passwordInput">Password</label>
+        <input id="passwordInput" type="password" autocomplete="off" />
+      </div>
+
+      <button class="login-btn" id="loginBtn">Access</button>
+
+       <span id="login-loading" class="loading-hidden">
+        Loading
+       <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+       </span>
+
+      <div class="login-error" id="loginError"></div>
+    </div>
+  </div>
+
+  <!-- APP (CHAT) -->
+  <div class="app">
+    <header class="header">
+      <div class="logo-wrapper">
+        <div class="logo-circle">
+          <img src="Synlog.png" alt="Logo" />
+        </div>
+        <div class="title-block">
+          <h1>Technical Assistant</h1>
+          <span>Syntegon Pharma Solid</span>
+        </div>
+      </div>
+      <div class="status">
+        <span class="status-dot"></span>
+        <span>Online</span>
+      </div>
+    </header>
+
+    <div class="chat">
+      <div id="messages">
+        <!-- Mensaje de bienvenida -->
+        <div class="message-row bot">
+          <div class="avatar bot">
+            <img src="Synlog.png" alt="Bot Logo" />
+          </div>
+          <div class="bubble">
+            Hi! I’m your AI assistant. Ask me anything about your project.
+          </div>
+        </div>
+      </div>
+
+      <!-- Bot typing indicator -->
+      <div class="typing-indicator-row" id="typingRow" style="display:none;">
+        <div class="typing">
+          <span>Bot is typing</span>
+          <div class="typing-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-inner">
+          <input
+            id="messageInput"
+            type="text"
+            placeholder="Type your question and press Enter…"
+          />
+          <button class="send-btn" id="sendBtn">
+            <span>Send</span>
+            <span class="send-icon">➤</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    const WEBHOOK_URL = "https://n8n.amgflow.ovh/webhook/67838d53-14a9-407b-8f7d-6a7990dadb43";
+    const API_KEY     = "i9Vbep05XRcE";
+
+    const messagesEl   = document.getElementById("messages");
+    const inputEl      = document.getElementById("messageInput");
+    const sendBtn      = document.getElementById("sendBtn");
+    const typingRow    = document.getElementById("typingRow");
+    const appEl        = document.querySelector(".app");
+    const splashEl     = document.getElementById("splash-screen");
+    const loginScreen  = document.getElementById("loginScreen");
+    const usernameInput= document.getElementById("usernameInput");
+    const passwordInput= document.getElementById("passwordInput");
+    const loginBtn     = document.getElementById("loginBtn");
+    const loginLoading = document.getElementById("login-loading");
+    const loginError   = document.getElementById("loginError");
+
+    let currentUser = null;
+    let currentPassword = null;
+
+    // ========= LÓGICA PANTALLA DE CARGA → LOGIN =========
+    window.addEventListener("load", () => {
+      const SPLASH_DURATION = 5000; // 5 segundos
+
+      setTimeout(() => {
+        if (splashEl) splashEl.style.display = "none";
+        if (loginScreen) loginScreen.style.display = "flex";
+        if (usernameInput) usernameInput.focus();
+      }, SPLASH_DURATION);
+    });
+
+    function addMessage(role, text) {
+      const row = document.createElement("div");
+      row.className = "message-row " + role;
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar " + role;
+
+      if (role === "bot") {
+        const img = document.createElement("img");
+        img.src = "Synlog.png";
+        img.alt = "Bot Logo";
+        avatar.appendChild(img);
+      } else {
+        const img = document.createElement("img");
+        img.src = "user-avatar.png";
+        img.alt = "User Avatar";
+        avatar.appendChild(img);
+      }
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+
+      if (role === "bot") {
+        bubble.innerHTML = marked.parse(text);
+      } else {
+        bubble.textContent = text;
+      }
+
+      if (role === "user") {
+        row.appendChild(bubble);
+        row.appendChild(avatar);
+      } else {
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+      }
+
+      messagesEl.appendChild(row);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function setTyping(visible) {
+      typingRow.style.display = visible ? "block" : "none";
+    }
+
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text || sendBtn.disabled) return;
+
+      if (!currentUser) {
+        addMessage("bot", "No user configured. Reload the page and enter your username.");
+        return;
+      }
+
+      addMessage("user", text);
+      inputEl.value = "";
+      inputEl.focus();
+
+      sendBtn.disabled = true;
+      setTyping(true);
+
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (API_KEY) headers["x-api-key"] = API_KEY;
+
+        const res = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            message: text,
+            user: currentUser,
+            password: currentPassword,
+          }),
+        });
+
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (_) {
+          data = {};
+        }
+
+        if (data && data.authorized === false) {
+          const msg = data.error || "Access denied. Unauthorized user.";
+          addMessage("bot", msg);
+          inputEl.disabled = true;
+          sendBtn.disabled = true;
+          return;
+        }
+
+        const answer = data.answer || "I could not generate an answer.";
+        addMessage("bot", answer);
+      } catch (err) {
+        console.error(err);
+        addMessage("bot", "Connection error. Please try again.");
+      } finally {
+        setTyping(false);
+        if (!inputEl.disabled) sendBtn.disabled = false;
+      }
+    }
+
+    async function checkUserAuthorized() {
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (API_KEY) headers["x-api-key"] = API_KEY;
+
+        const res = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            message: "__auth_check__",
+            user: currentUser,
+            password: currentPassword,
+          }),
+        });
+
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (_) {
+          data = {};
+        }
+
+        if (data && data.authorized === false) return false;
+        return true;
+      } catch (err) {
+        console.error("Error checking authorization:", err);
+        alert("Error checking access. Please try again later.");
+        return false;
+      }
+    }
+
+    async function handleLogin() {
+      const user = (usernameInput.value || "").trim().toLowerCase();
+      const pass = (passwordInput.value || "").trim();
+
+      if (!user || !pass) {
+        loginError.textContent = "Please enter username and password.";
+        loginError.style.display = "block";
+        loginBtn.disabled = false;
+        loginLoading.classList.add("loading-hidden"); 
+        return;
+      }
+
+      currentUser = user;
+      currentPassword = pass;
+
+      loginBtn.disabled = true;
+      loginError.style.display = "none";
+
+      const allowed = await checkUserAuthorized();
+
+      if (!allowed) {
+        loginError.textContent = "Invalid credentials. Please try again.";
+        loginError.style.display = "block";
+        loginBtn.disabled = false;
+        loginLoading.classList.add("loading-hidden"); 
+        currentUser = null;
+        currentPassword = null;
+        return;
+      }
+
+      if (loginScreen) loginScreen.style.display = "none";
+      if (appEl) appEl.style.display = "flex";
+      loginBtn.disabled = false;
+      loginLoading.classList.add("loading-hidden"); 
+    }
+
+    // Listeners
+    sendBtn.addEventListener("click", sendMessage);
+
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    loginBtn.addEventListener("click", (e) => {
+     loginBtn.disabled = true;
+     loginLoading.classList.remove("loading-hidden");
+     handleLogin(e);
+    });
+
+
+    usernameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        passwordInput.focus();
+      }
+    });
+
+
+    passwordInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        loginBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
